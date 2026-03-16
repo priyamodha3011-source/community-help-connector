@@ -1,0 +1,418 @@
+
+<!DOCTYPE html>
+<html ng-app="communityApp">
+
+<head>
+
+<title>Community Help Connector</title>
+
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#eef3ff;
+}
+
+header{
+background:#4facfe;
+color:white;
+text-align:center;
+padding:25px;
+}
+
+.box{
+width:320px;
+margin:40px auto;
+background:white;
+padding:25px;
+border-radius:10px;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+text-align:center;
+}
+
+.box input{
+width:90%;
+padding:10px;
+margin:8px;
+border:1px solid #ccc;
+border-radius:5px;
+}
+
+button{
+padding:8px 15px;
+border:none;
+background:#4facfe;
+color:white;
+border-radius:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#6a5cff;
+}
+
+.logout{
+background:red;
+float:right;
+}
+
+.container{
+width:90%;
+margin:auto;
+margin-top:30px;
+}
+
+.stats{
+display:flex;
+gap:30px;
+margin-bottom:20px;
+}
+
+.stat{
+background:#4facfe;
+color:white;
+padding:15px;
+border-radius:8px;
+width:150px;
+text-align:center;
+}
+
+table{
+width:100%;
+margin-top:15px;
+border-collapse:collapse;
+background:white;
+}
+
+th,td{
+padding:10px;
+border:1px solid #ddd;
+text-align:center;
+}
+
+th{
+background:#4facfe;
+color:white;
+}
+
+.delete{
+background:red;
+}
+
+.edit{
+background:orange;
+}
+
+.accept{
+background:green;
+}
+
+.reject{
+background:#999;
+}
+
+</style>
+
+</head>
+
+<body ng-controller="mainController">
+
+<header>
+<h1>Community Help Connector</h1>
+</header>
+
+<div ng-show="showSignup" class="box">
+
+<h2>Sign Up</h2>
+
+<input type="text" placeholder="Username" ng-model="newUser">
+
+<input type="password" placeholder="Password" ng-model="newPass">
+
+<br>
+
+<button ng-click="signup()">Create Account</button>
+
+<p>Already user? 
+<a href="" ng-click="goLogin()">Sign In</a>
+</p>
+
+</div>
+
+<div ng-show="showLogin" class="box">
+
+<h2>Sign In</h2>
+
+<input type="text" placeholder="Username" ng-model="username">
+
+<input type="password" placeholder="Password" ng-model="password">
+
+<br>
+
+<button ng-click="login()">Login</button>
+
+<p>New user?
+<a href="" ng-click="goSignup()">Sign Up</a>
+</p>
+
+</div>
+
+<div ng-show="loggedIn" class="container">
+
+<button class="logout" ng-click="logout()">Sign Out</button>
+
+<h2>Welcome {{username}}</h2>
+
+<!-- STATS -->
+
+<div class="stats">
+
+<div class="stat">
+<h3>{{requests.length}}</h3>
+<p>Requests</p>
+</div>
+
+<div class="stat">
+<h3>{{volunteers.length}}</h3>
+<p>Volunteers</p>
+</div>
+
+</div>
+
+<h3>Help Request Form</h3>
+
+<form ng-submit="addRequest()">
+
+<input type="text" placeholder="Name" ng-model="name" required>
+
+<input type="text" placeholder="Help Needed" ng-model="help" required>
+
+<input type="text" placeholder="Location" ng-model="location" required>
+
+<button type="submit">{{editMode ? 'Update' : 'Submit'}}</button>
+
+</form>
+
+<h3>Search Request</h3>
+
+<input type="text" placeholder="Search..." ng-model="searchText">
+
+<table>
+
+<tr>
+<th>Name</th>
+<th>Help</th>
+<th>Location</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+
+<tr ng-repeat="r in requests | filter:searchText">
+
+<td>{{r.name}}</td>
+
+<td>{{r.help}}</td>
+
+<td>{{r.location}}</td>
+
+<td>{{r.status}}</td>
+
+<td>
+
+<button class="accept" ng-click="acceptRequest($index)">Accept</button>
+
+<button class="reject" ng-click="rejectRequest($index)">Reject</button>
+
+<button class="edit" ng-click="editRequest($index)">Edit</button>
+
+<button class="delete" ng-click="deleteRequest($index)">Delete</button>
+
+</td>
+
+</tr>
+
+</table>
+
+<h3>Volunteer Registration</h3>
+
+<form ng-submit="addVolunteer()">
+
+<input type="text" placeholder="Volunteer Name" ng-model="vname" required>
+
+<input type="text" placeholder="Phone Number" ng-model="phone" required>
+
+<input type="text" placeholder="Skill / Help Type" ng-model="skill" required>
+
+<button>Add Volunteer</button>
+
+</form>
+
+<table>
+
+<tr>
+<th>Name</th>
+<th>Phone</th>
+<th>Skill</th>
+</tr>
+
+<tr ng-repeat="v in volunteers">
+
+<td>{{v.name}}</td>
+
+<td>{{v.phone}}</td>
+
+<td>{{v.skill}}</td>
+
+</tr>
+
+</table>
+
+</div>
+
+<script>
+
+var app = angular.module("communityApp", []);
+
+app.controller("mainController", function($scope){
+
+$scope.showSignup=true;
+$scope.showLogin=false;
+$scope.loggedIn=false;
+
+$scope.users=[];
+
+$scope.signup=function(){
+
+$scope.users.push({
+username:$scope.newUser,
+password:$scope.newPass
+});
+
+$scope.newUser="";
+$scope.newPass="";
+
+$scope.showSignup=false;
+$scope.showLogin=true;
+
+};
+
+$scope.goLogin=function(){
+$scope.showSignup=false;
+$scope.showLogin=true;
+};
+
+$scope.goSignup=function(){
+$scope.showSignup=true;
+$scope.showLogin=false;
+};
+
+$scope.login=function(){
+
+var valid=false;
+
+angular.forEach($scope.users,function(u){
+
+if(u.username==$scope.username && u.password==$scope.password){
+valid=true;
+}
+
+});
+
+if(valid){
+$scope.loggedIn=true;
+$scope.showLogin=false;
+}
+
+};
+
+$scope.logout=function(){
+
+$scope.loggedIn=false;
+$scope.showLogin=true;
+
+};
+
+$scope.requests=[];
+$scope.editMode=false;
+$scope.editIndex=-1;
+
+$scope.addRequest=function(){
+
+if($scope.editMode){
+
+$scope.requests[$scope.editIndex]={
+name:$scope.name,
+help:$scope.help,
+location:$scope.location,
+status:"Pending"
+};
+
+$scope.editMode=false;
+
+}else{
+
+$scope.requests.push({
+name:$scope.name,
+help:$scope.help,
+location:$scope.location,
+status:"Pending"
+});
+
+}
+
+$scope.name="";
+$scope.help="";
+$scope.location="";
+
+};
+
+$scope.editRequest=function(index){
+
+$scope.name=$scope.requests[index].name;
+$scope.help=$scope.requests[index].help;
+$scope.location=$scope.requests[index].location;
+
+$scope.editMode=true;
+$scope.editIndex=index;
+
+};
+
+$scope.deleteRequest=function(index){
+
+$scope.requests.splice(index,1);
+
+};
+
+$scope.acceptRequest=function(index){
+$scope.requests[index].status="Accepted";
+};
+
+$scope.rejectRequest=function(index){
+$scope.requests[index].status="Rejected";
+};
+
+$scope.volunteers=[];
+
+$scope.addVolunteer=function(){
+
+$scope.volunteers.push({
+name:$scope.vname,
+phone:$scope.phone,
+skill:$scope.skill
+});
+
+$scope.vname="";
+$scope.phone="";
+$scope.skill="";
+
+};
+
+});
+
+</script>
+
+</body>
+</html>
